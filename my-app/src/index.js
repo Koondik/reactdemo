@@ -2,89 +2,36 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
 
-/* 
-现在你已经有了一个功能相当丰富的井字棋游戏：
-实现了井字棋游戏的基本规则并可以进行游戏，
-能够判断一方获胜，
-能够存储每一步时的棋局状态，
-允许玩家切换至之前的某一步“悔棋”。 */
+// Reference http://qiita.com/suhirotaka/items/0319dce09cb808dc6393
 
-// 胜方算法
-function calculateWinner(squares) {
-  const lines = [
-    [0, 1, 2],
-    [3, 4, 5],
-    [6, 7, 8],
-    [0, 3, 6],
-    [1, 4, 7],
-    [2, 5, 8],
-    [0, 4, 8],
-    [2, 4, 6],
-  ];
-  for (let i = 0; i < lines.length; i++) {
-    const [a, b, c] = lines[i];
-    if (squares[a] && squares[a] === squares[b] && squares[a] === squares[c]) {
-      return squares[a];
-    }
-  }
-  return null;
-}
-
-
-// class Square extends React.Component {
-//     // constructor(){
-//     //   super(); // 调用 super(); 方法才能在继承父类的子类中正确获取到类型的 this 。
-//     //   this.state = {
-//     //     value:null
-//     //   }
-//     // }
-//     render() {
-//       return (
-//         <button className="square" onClick={()=>this.props.onClick()}>
-//           {/* {this.props.value} */}
-//           {this.props.value}
-//         </button>
-//       );
-//     }
-//   }
-
-/* 函数定义组件 */
 function Square(props) {
+  if (props.highlight) {
+    return (
+      <button className="square" onClick={() => props.onClick()} style={{color: "red"}}> 
+        {props.value}
+      </button>
+    );
+  }else {
   return (
-    <button className="square" onClick={props.onClick}>
+    <button className="square" onClick={() => props.onClick()}>
       {props.value}
     </button>
-  )
-}
-/* 
-当你遇到需要同时获取多个子组件数据，或者两个组件之间需要相互通讯的情况时，
-把子组件的 state 数据提升至其共同的父组件当中保存。
-之后父组件可以通过 props 将状态数据传递到子组件当中。
-这样应用当中的状态数据就能够更方便地交流共享了。
-*/
-class Board extends React.Component {
-  // constructor(props) {
-  //   super(props);
-  //   this.state = {
-  //     squares: Array(9).fill(null),
-  //     xIsNext: true
-  //   }
-  // }
-  renderSquare(i) {
-    return (
-      <Square key={i} value={this.props.squares[i]}
-        onClick={() => this.props.onClick(i)} />
-    )
+  );
   }
+}
 
+class Board extends React.Component {
+  renderSquare(i) {
+    return <Square key={i} value={this.props.squares[i]} onClick={() => this.props.onClick(i)} highlight={this.props.winnerLine.includes(i)}/>;
+  }
   render() {
-    let rows = [];
-    for(let i = 0,len=3; i<len; i++){
-      let row = [];
-      for(let j = i*3,len=3*i+3; j<len; j++){
-          row.push(this.renderSquare(j))
+    var rows = [];
+    for (var i=0; i<3 ; i++){
+      var row = [];
+      for (var j=3*i; j<3*i+3;j++){
+        row.push(this.renderSquare(j));
       }
-      rows.push(<div className="board-row" key={i} >{row}</div>)
+      rows.push(<div className="board=row" key={i}>{row}</div>)
     }
     return (
       <div>
@@ -95,71 +42,53 @@ class Board extends React.Component {
 }
 
 class Game extends React.Component {
-  constructor(){
+  constructor() {
     super();
     this.state = {
-      history:[{
-        squares:Array(9).fill(null),
+      history: [{
+        squares: Array(9).fill(null),
         lastStep: 'Game start',
       }],
-      stepNumber:0,
-      xIsNext:true,
-      isSort:false
-    }
+      xIsNext: true,
+      stepNumber: 0,
+      sort: false,
+    };
   }
   handleClick(i) {
-    const history = this.state.history.slice(0, this.state.stepNumber + 1);
-    const current = history[this.state.isSort?0:history.length-1];
-    const squares = current.squares.slice(); // 使用 .slice() 方法对已有的数组数据进行了浅拷贝，以此来防止对已有数据的改变。
-    if (calculateWinner(squares) || squares[i]) {
-      // 方格内已经落子/有一方获胜就就无法继续落子的判断逻辑
+    const history = this.state.history;
+    const current = history[this.state.stepNumber];
+    const squares = current.squares.slice();
+    if (calculateWinner(squares).winner || squares[i]) {
       return;
     }
     squares[i] = this.state.xIsNext ? 'X' : 'O';
     const location = '('+ (Math.floor(i / 3)+1) + ',' + ((i % 3)+1) + ')';
     const desc = squares[i] + ' moved to ' + location;
-    let obj = {  
-      squares: squares,
-      lastStep:desc
-    }
     this.setState({
-      history:(this.state.isSort?history.unshift(obj):history.concat([obj])),
-      stepNumber:history.length,
-      xIsNext: !this.state.xIsNext
+      history: history.concat([{
+        squares: squares,
+        lastStep: desc,
+      }]),
+      xIsNext: !this.state.xIsNext,
+      stepNumber: history.length,
     })
   }
-  jumpTo(step){
+  jumpTo(step) {
+  this.setState({
+    stepNumber: step,
+    xIsNext: (step % 2) ? false : true,
+  });
+}
+  toggleSort() {
     this.setState({
-      stepNumber:step,
-      xIsNext: (step%2)? false : true
-    })
-  }
-  sort(){
-    this.setState({
-      history:this.state.history.reverse(),
-      isSort:!this.state.isSort
+      sort:!this.state.sort,
     })
   }
   render() {
-    const history = this.state.history;
-    const current = history[this.state.isSort?0:this.state.stepNumber];
-    const winner = calculateWinner(current.squares);
-
-    const moves = history.map((step,move)=>{
-      const desc = step.lastStep;
-      if(move === this.state.stepNumber){
-        return (
-          <li key={move}>
-            <a href="#" onClick={()=>this.jumpTo(move)}> <strong>{desc}</strong> </a>
-          </li>
-        )
-      }
-      return (
-        <li key={move}>
-          <a href="#" onClick={()=>this.jumpTo(move)}>{desc}</a>
-        </li>
-      )
-    })
+    let history = this.state.history;
+    const current = history[this.state.stepNumber];
+    const winner = calculateWinner(current.squares).winner;
+    const winnerLine = calculateWinner(current.squares).line;
 
     let status;
     if (winner) {
@@ -167,15 +96,34 @@ class Game extends React.Component {
     } else {
       status = 'Next player: ' + (this.state.xIsNext ? 'X' : 'O');
     }
-    const btn = (<button onClick={()=>this.sort()}>sort</button>)
+    if (this.state.sort){
+      history = this.state.history.slice();
+      history.reverse();
+      }
+    const moves = history.map((step,move) => {
+     const desc = step.lastStep;
+      if (move == this.state.stepNumber) {
+        return (
+          <li key={move}>
+            <a href="#" onClick={() => this.jumpTo(move)}><strong>{desc}</strong></a>
+         </li>
+        );
+      }
+      return (
+        <li key={move}>
+          <a href="#" onClick={() => this.jumpTo(move)}>{desc}</a>
+         </li>
+      );
+    });
+    
     return (
       <div className="game">
         <div className="game-board">
-          <Board squares={current.squares} onClick={(i)=>this.handleClick(i)}/>
+          <Board squares={current.squares} onClick={(i) => this.handleClick(i)} winnerLine={winnerLine}/>
         </div>
         <div className="game-info">
           <div>{status}</div>
-          <div>{btn}</div>
+          <button onClick={() => this.toggleSort()}>Sort</button>
           <ol>{moves}</ol>
         </div>
       </div>
@@ -190,4 +138,22 @@ ReactDOM.render(
   document.getElementById('root')
 );
 
-
+function calculateWinner(squares) {
+  const lines = [
+    [0, 1, 2],
+    [3, 4, 5],
+    [6, 7, 8],
+    [0, 3, 6],
+    [1, 4, 7],
+    [2, 5, 8],
+    [0, 4, 8],
+    [2, 4, 6],
+  ];
+  for (let i = 0; i < lines.length; i++) {
+    const [a, b, c] = lines[i];
+    if (squares[a] && squares[a] === squares[b] && squares[a] === squares[c]) {
+      return {winner:squares[a], line:[a, b, c]};
+    }
+  }
+  return {winner:null, line:[]};
+}
