@@ -1,5 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
+import { BrowserRouter as Router, Route, Link } from "react-router-dom";
 import './index.css';
 
 // Reference http://qiita.com/suhirotaka/items/0319dce09cb808dc6393
@@ -131,10 +132,57 @@ class Game extends React.Component {
   }
 }
 
+
+const RouteWithSubRoutes = route => (
+  <Route
+    path={route.path}
+    render={props => (
+      // pass the sub-routes down to keep nesting
+      <route.component {...props} routes={route.routes} />
+    )}
+  />
+);
+
+class Home extends React.Component{
+  render(){
+    return(
+      <div className="Home">
+        <Nav />
+        <Route path="/Game" component={Game}></Route>
+        <Route path="/Square" component={Square}></Route>
+      </div>
+    )
+  }
+}
+class Nav extends React.Component{
+  render(){
+    return(
+      <div className="Nav">
+        <ul>
+          <li>
+          <Link to="/">Home</Link>
+          </li>
+          <li>
+          <Link to="/Game">Game</Link>
+          </li>
+          <li>
+          <Link to="/Square">Square</Link>
+          </li>
+        </ul>
+      </div>
+    )
+  }
+}
 // ========================================
 
 ReactDOM.render(
-  <Game />,
+  (
+    <Router>
+      <Route path="/" component={Home}>
+      
+      </Route>
+    </Router>
+  ),
   document.getElementById('root')
 );
 
